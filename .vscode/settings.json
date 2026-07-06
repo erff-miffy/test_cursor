@@ -1,0 +1,5 @@
+{
+    "arduino.useArduinoCli": true,
+    "arduino.path": "C:\\Users\\yinff\\.cursor\\extensions\\vscode-arduino.vscode-arduino-community-0.7.1\\assets\\platform\\win32-x64\\arduino-cli",
+    "arduino.commandPath": "arduino-cli.exe"
+}
