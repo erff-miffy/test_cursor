@@ -17,6 +17,8 @@
 阶段 4：新建项目并绑定 GitHub（每个项目一次）
     ↓
 阶段 5：日常开发（add → commit → push / pull）
+
+补充路径：远程已有仓库 → 使用 `git clone` 直接下载到本地（见 5.6）
 ```
 
 ---
@@ -189,6 +191,90 @@ git push -u origin main
 | `failed to push some refs` | 远程有 README 等初始提交 | 先 `git pull origin main --rebase` 再 push，或建空仓库 |
 | 无内容可 push | 未 commit | 先 `git add` + `git commit` |
 
+### 5.6 使用 `git clone` 从远程获取项目（另一种起点）
+
+当 **GitHub 上已有仓库**、本地还没有项目文件夹时，用 `git clone` 比 `init + remote add + pull` 更简单。
+
+#### 适用场景
+
+| 场景 | 说明 |
+|------|------|
+| 换电脑 / 新环境 | SSH、Git 身份已配好，把远程项目拉到本机 |
+| 本地文件夹已删除 | 远程仍保留完整历史，可重新下载 |
+| 本地目录损坏想重来 | 确认已 `push` 后删掉本地，再 clone |
+| 参与他人已有仓库 | 远程已有代码，直接克隆开始协作 |
+| 多台电脑同步 | 在另一台机器上获取同一份远程仓库 |
+
+#### 使用方法
+
+```powershell
+cd C:\Users\yinff\Desktop
+
+# 克隆到与仓库同名的文件夹（如 test_cursor）
+git clone git@github.com:用户名/仓库名.git
+
+# 或指定本地文件夹名
+git clone git@github.com:用户名/仓库名.git 本地文件夹名
+
+cd 本地文件夹名
+```
+
+`git clone` 会自动完成：
+
+- 创建项目文件夹
+- 初始化 `.git` 并绑定 `origin`
+- 下载全部 commit 与文件
+- 检出默认分支（通常为 `main`）
+
+**无需**再执行 `git init`、`git remote add`、`git pull`。
+
+#### 克隆后直接使用
+
+```powershell
+# 用 Cursor 打开克隆下来的文件夹
+# 文件 → 打开文件夹 → 选择 clone 生成的目录
+
+git status
+git pull          # 获取远程最新（若他人有更新）
+git add .
+git commit -m "描述"
+git push
+```
+
+#### 与「本地 init 再 push」的对比
+
+| 对比项 | 本地 init + push | git clone |
+|--------|------------------|-----------|
+| 前提 | 本地先有代码，远程多为空仓库 | **远程已有完整仓库** |
+| 典型用途 | 从零新建项目 | 恢复、换机、协作 |
+| 是否需要 remote add | 需要 | **不需要**（已自动配置） |
+| 是否需要 init | 需要 | **不需要** |
+
+#### 删除本地后恢复（常见操作）
+
+```powershell
+# 1. 删除本地前：确保重要改动已 push
+git status
+git push
+
+# 2. 删除本地整个项目文件夹（资源管理器或命令行）
+
+# 3. 重新克隆
+cd C:\Users\yinff\Desktop
+git clone git@github.com:用户名/仓库名.git
+```
+
+> **注意：** 未 commit 或未 push 的改动会随本地删除而丢失；远程才是已 push 内容的备份。
+
+#### clone 常见问题
+
+| 问题 | 原因 | 解决方案 |
+|------|------|----------|
+| `Permission denied (publickey)` | SSH 未配置 | 完成阶段 3，`ssh -T git@github.com` 成功后再 clone |
+| `Repository not found` | 仓库名错误或无权限 | 检查 URL、仓库是否为 Private、账号是否有访问权 |
+| 目标文件夹已存在 | 同名目录不为空 | 换 clone 目标名，或先删除/移走旧文件夹 |
+| clone 后 Cursor Chat 是新的 | 工作区路径变化 | 正常；重要结论建议写入项目内 `.md` 文件 |
+
 ---
 
 ## 六、阶段 5：日常开发流程（每次改代码）
@@ -253,7 +339,7 @@ git pull
 □ （可选）~/.ssh/config 已配置 443 端口
 ```
 
-### 每个新项目
+### 每个新项目（本地从零创建）
 
 ```
 □ GitHub 上已创建空仓库
@@ -263,6 +349,16 @@ git pull
 □ git branch -M main
 □ git push -u origin main
 □ GitHub 网页上能看到代码
+```
+
+### 获取已有远程仓库（git clone）
+
+```
+□ SSH 与 Git 身份已配置（阶段 2、3 已完成）
+□ git clone git@github.com:用户/仓库.git [本地文件夹名]
+□ Cursor 打开 clone 生成的文件夹
+□ git status 正常
+□ 日常开发：add → commit → push / pull
 ```
 
 ### 每次改代码后
@@ -279,6 +375,7 @@ git pull
 
 | 目的 | 命令 |
 |------|------|
+| 克隆远程仓库到本地 | `git clone git@github.com:用户/仓库.git [文件夹名]` |
 | 查看状态 | `git status` |
 | 暂存改动 | `git add .` |
 | 提交 | `git commit -m "说明"` |
@@ -302,10 +399,13 @@ flowchart TD
     E --> F{ssh -T 成功?}
     F -->|否| G[检查代理/ssh-agent/公钥]
     G --> F
-    F -->|是| H[GitHub 新建空仓库]
-    H --> I[git init / add / commit]
-    I --> J[remote add / branch -M / push -u]
-    J --> K[日常: add → commit → push]
+    F -->|是| H{本地已有代码?}
+    H -->|是，从零推送| I[GitHub 新建空仓库]
+    I --> J[git init / add / commit]
+    J --> K[remote add / branch -M / push -u]
+    H -->|否，远程已有| L[git clone 远程仓库]
+    K --> M[日常: add → commit → push]
+    L --> M
 ```
 
 ---
@@ -313,9 +413,8 @@ flowchart TD
 ## 十一、附录：与 Arduino 等其它工具的关系
 
 - **Git/GitHub 配置**：全局一次，所有项目共用
-- **每个 Git 项目**：需单独 `git init` + 绑定远程
-- **Arduino 项目**：除 Git 外，还需 `.vscode/arduino.json`（或 `Arduino: Initialize`），与 Git 配置无关
+- **每个 Git 项目**：本地从零用 `git init` + 绑定远程；远程已有则用 `git clone`
 
 ---
 
-*文档版本：2026-07-06*
+*文档版本：2026-07-06（含 git clone 补充）*
